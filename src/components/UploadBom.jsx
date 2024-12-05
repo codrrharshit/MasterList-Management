@@ -222,7 +222,7 @@ const UploadBOMPage = ({ setBOMs, BOMs }) => {
   }, [BOMs]);
   const linkStyle = {
     display: 'inline-block',
-    margin: '20px 20px 20 px 0px',
+    margin: '20px',
     padding: '10px 20px',
     backgroundColor: '#007bff',
     color: '#fff',
