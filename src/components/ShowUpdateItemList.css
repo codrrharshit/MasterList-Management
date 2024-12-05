@@ -1,0 +1,100 @@
+.table-container {
+    margin: 20px auto;
+    width: 90%;
+    overflow-x: auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Table Styling */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    background-color: #fff;
+  }
+  
+  /* Table Header Styling */
+  thead th {
+    background-color: #4caf50;
+    color: white;
+    padding: 10px 15px;
+    font-weight: bold;
+    border-bottom: 2px solid #ddd;
+  }
+  
+  /* Table Rows Styling */
+  tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  tbody tr:hover {
+    background-color: #f1f1f1;
+  }
+  
+  /* Table Cell Styling */
+  td,
+  th {
+    padding: 10px 15px;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  /* Responsive Table for Tablets */
+  @media (max-width: 768px) {
+    table {
+      font-size: 14px;
+    }
+  
+    td,
+    th {
+      padding: 8px;
+    }
+  }
+  
+  /* Responsive Table for Mobile Phones */
+  @media (max-width: 480px) {
+    table {
+      display: block;
+      width: 100%;
+    }
+  
+    thead {
+      display: none; /* Hide the table header on small screens */
+    }
+  
+    tbody tr {
+      display: block;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+  
+    tbody tr:nth-child(even) {
+      background-color: transparent; /* Remove alternating row color */
+    }
+  
+    tbody td {
+      display: block;
+      width: 100%;
+      padding: 8px 0;
+      text-align: left;
+      border-bottom: none; /* Remove bottom border */
+    }
+  
+    tbody td::before {
+      content: attr(data-label); /* Use the 'data-label' attribute for the label */
+      font-weight: bold;
+      display: block;
+      margin-bottom: 5px;
+      color: #4caf50;
+    }
+  }
+  
+  /* Add Labels for Each Cell in Mobile View */
+  tbody td[data-label]:empty::before {
+    content: ""; /* Prevent empty cells from showing labels */
+  }
+  

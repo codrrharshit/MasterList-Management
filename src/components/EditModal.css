@@ -1,0 +1,136 @@
+/* Modal Overlay */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-out;
+    padding: 10px; /* Add padding for smaller screens */
+  }
+  
+  /* Modal Content */
+  .modal-content {
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    width: 500px;
+    max-width: 90%; /* Ensure it doesn't overflow on small screens */
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease-out;
+    transition: transform 0.3s ease-out;
+  }
+  
+  /* Header Text */
+  .modal-content h2 {
+    margin-top: 0;
+    font-size: 24px;
+    color: #333;
+    font-family: 'Arial', sans-serif;
+    text-align: center;
+  }
+  
+  /* Modal Actions */
+  .modal-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    gap: 10px; /* Add gap between buttons for better spacing */
+  }
+  
+  /* Buttons */
+  .modal-actions button {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    flex: 1; /* Ensure buttons take equal space */
+  }
+  
+  button[type="submit"] {
+    background-color: #4CAF50;
+    color: white;
+  }
+  
+  button[type="submit"]:hover {
+    background-color: #45a049;
+  }
+  
+  button[type="button"] {
+    background-color: #f44336;
+    color: white;
+  }
+  
+  button[type="button"]:hover {
+    background-color: #e53935;
+  }
+  
+  /* Modal Fade-in and Slide-up Animations */
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideUp {
+    0% {
+      transform: translateY(30px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  /* Responsive Modal Styles */
+  @media (max-width: 768px) {
+    .modal-content {
+      width: 80%; /* Adjust width for tablets */
+      padding: 20px; /* Reduce padding */
+    }
+
+    .modal-content h2 {
+      font-size: 20px; /* Adjust font size for smaller screens */
+    }
+
+    .modal-actions button {
+      padding: 8px 15px; /* Adjust button padding */
+      font-size: 14px; /* Adjust button font size */
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .modal-content {
+      width: 95%; /* Adjust width for mobile */
+      padding: 15px; /* Further reduce padding */
+    }
+
+    .modal-content h2 {
+      font-size: 18px; /* Further adjust font size for mobile */
+    }
+
+    .modal-actions {
+      flex-direction: column; /* Stack buttons vertically on mobile */
+    }
+
+    .modal-actions button {
+      width: 100%; /* Make buttons full-width */
+      margin-bottom: 10px; /* Add margin between stacked buttons */
+    }
+    
+    .modal-actions button:last-child {
+      margin-bottom: 0; /* Remove margin from the last button */
+    }
+  }
