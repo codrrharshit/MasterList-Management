@@ -18,7 +18,7 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
   const [CsvEntryUpdate,setCsvEntryUpdate]=useState(0)
   const [activeMode, setActiveMode] = useState("single");
   const [lastId, setLastId] = useState(0);
-
+  const [pendingJobs,setPendinJobs]=useState(0);
 
   useEffect(() => {
     fetch("https://api-assignment.inveesync.in/bom")
@@ -135,8 +135,22 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
         );
       }
 
+      if (!item_id && sellItemIds.length > 0) {
+        errors.push(
+          `Row ${index + 1}: Sell item must have at least 1 valid item_id.`
+        );
+        setPendinJobs((prevstate)=>prevstate+1)
+      }
+
+      if (!component_id && purchaseIds.length > 0) {
+        errors.push(
+          `Row ${index + 1}: Purchase item must have at least 1 valid component_id.`
+        );
+        setPendinJobs((prevstate)=>prevstate+1)
+      }
+
       if (errors.length > 0) {
-        errorData.push({ ...row, errors: errors.join(", ") });
+        errorData.push({ ...row, errors: errors.join(", "),pendingJobs:pendingJobs});
       }
     });
     return errorData;
@@ -144,7 +158,7 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
 
   const generateCSV = (errorData) => {
     
-    const header = ["id","item_id","component_id","quantity","created_by","last_updated_by","createdAt","updatedAt","errors"];  // CSV header
+    const header = ["id","item_id","component_id","quantity","created_by","last_updated_by","createdAt","updatedAt","errors","pendingJobs"];  // CSV header
     const rows = errorData.map(item => {
       return [
         item.id,
@@ -155,7 +169,8 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
         item.last_updated_by,
         item.createdAt,
         item.updatedAt,
-        item.errors
+        item.errors,
+        item.pendingJobs,
       ];
     });
     
