@@ -2,23 +2,53 @@ import React, { useState } from "react";
 import "./ShowUpdateItemList.css";
 import BOMEditModal from "./BOMEditModal";
 
-export default function ShowBomList({ setBOMs, BOMs }) {
+export default function ShowBomList({ setBOMs, BOMs, setEdit ,setDelete}) {
   const [selectedRowData, setSelectedRowData] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const handleDelete = (rowId) => {
-    setBOMs((prevstate) => prevstate.filter((BOM) => BOM.id !== rowId));
+  const handleDelete = async (rowId) => {
+
+      const bomToDelete = BOMs.find((bom) => bom.id === rowId);
+  
+      if (!bomToDelete) {
+        alert("BOM not found.");
+        return;
+      }
+  
+      // Confirm deletion before proceeding
+      const confirmDelete = window.confirm(`Are you sure you want to delete the BOM with ID: ${rowId}?`);
+      if (!confirmDelete) return;
+  
+      // Make a DELETE request to the API
+      const response = await fetch(`https://api-assignment.inveesync.in/bom/${rowId}`, {
+        method: 'DELETE',
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+  
+      if (response.ok) {
+        // Optionally, log the response if the API returns data
+        const result = await response.json();
+        console.log("BOM deleted successfully:", result);
+  
+        setDelete((prevstate)=>prevstate+1)
+  
+
+        alert(`BOM with ID: ${rowId} deleted successfully!`);
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to delete BOM. Server responded with: ${errorData.message || response.statusText}`);
+      }
+  
   };
+  
   const handleEdit = (rowId) => {
     const selectedRow = BOMs.find((BOM) => BOM.id === rowId);
     setSelectedRowData(selectedRow); // Set the data to be edited
     setShowModal(true); // Open the modal
   };
   const handleSave = (editedData) => {
-    const updatedItems = BOMs.map((BOM) =>
-      BOM.id === editedData.id ? { ...BOM, ...editedData } : BOM
-    );
-    console.log(updatedItems);
-    setBOMs(updatedItems); // Update the items state with the edited data
+    setEdit((prevstate)=>prevstate+1)
     setShowModal(false); // Close the modal
   };
 

@@ -55,14 +55,14 @@ const BOMEditModal = ({ rowData, onClose, onSave }) => {
     updatedAt,
     }=formData;
 
-    if (sellItemIds.includes(component_id)) {
+    if (sellItemIds.includes(Number(component_id))) {
       errors.push(
         `Sell item (${component_id}) cannot be used as a component.`
       );
     }
 
     // Validate that the item_id is not a 'purchase' item
-    if (purchaseIds.includes(item_id)) {
+    if (purchaseIds.includes(Number(item_id))) {
       errors.push(
         `Purchase item (${item_id}) cannot be used as component.`
       );
@@ -85,7 +85,7 @@ const BOMEditModal = ({ rowData, onClose, onSave }) => {
     }
 
     // Validate that the item_id exists in the stored items
-    if (!existingItems.includes(item_id)) {
+    if (!existingItems.includes(Number(item_id))) {
       errors.push(
          `BOM cannot be created for item_id (${item_id}) not created yet.`
       );
@@ -102,17 +102,38 @@ const BOMEditModal = ({ rowData, onClose, onSave }) => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const validationErrors = validateData();
+    
     if (validationErrors.length > 0) {
-      setErrors(validationErrors);
+      setErrors(validationErrors); // Display validation errors
     } else {
       setErrors([]);
-      onSave(formData); // Save the edited data
-      onClose(); // Close the modal
+
+        const response = await fetch(`https://api-assignment.inveesync.in/bom/${formData.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData), // Send the form data as JSON
+        });
+  
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to save changes: ${errorText}`);
+        }
+  
+        const updatedData = await response.json();
+        console.log("Successfully saved changes:", updatedData);
+  
+        onSave(); 
+        alert("Changes saved successfully!");
+        onClose(); 
+
     }
   };
+  
 
 
 

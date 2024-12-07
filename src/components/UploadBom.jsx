@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import Papa from "papaparse";
 import "./UploadBom.css";
 import { Link } from "react-router-dom";
-const UploadBOMPage = ({ setBOMs, BOMs }) => {
+const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
   const [csvData, setCsvData] = useState([]);
   const [csvErrors, setCsvErrors] = useState([]);
   const [singleEntry, setSingleEntry] = useState({
@@ -14,10 +14,26 @@ const UploadBOMPage = ({ setBOMs, BOMs }) => {
     createdAt: "",
     updatedAt: "",
   });
+  const [SingleEntryUpdate,setSingleEntryUpdate]=useState(0)
+  const [CsvEntryUpdate,setCsvEntryUpdate]=useState(0)
   const [activeMode, setActiveMode] = useState("single");
   const [lastId, setLastId] = useState(0);
 
-  // Predefined lists for validation
+
+  useEffect(() => {
+    fetch("https://api-assignment.inveesync.in/bom")
+      .then((response) => response.json())
+      .then((data) => {
+        console.log( data);
+        setBOMs(data); 
+        const maxId = data.reduce(
+          (maxId, item) => Math.max(maxId, parseInt(item.id || 0)),
+          0
+        );
+        setLastId(maxId);
+      })
+      .catch((error) => console.error("Error fetching data:", error));
+  }, [SingleEntryUpdate,CsvEntryUpdate,Edit,Delete]);
 
   const handleCSVUpload = (e) => {
     setCsvErrors([]);
@@ -38,6 +54,7 @@ const UploadBOMPage = ({ setBOMs, BOMs }) => {
         const parsedData = result.data.filter((row) =>
           Object.values(row).some((value) => value !== "")
         );
+        console.log(data);
         const errors = validateData(parsedData);
         if (errors.length === 0) {
           setCsvData(parsedData);
@@ -56,21 +73,23 @@ const UploadBOMPage = ({ setBOMs, BOMs }) => {
   };
 
   const validateData = (data) => {
-    const errors = [];
+    const errorData = [];
     const itemComponentPairs = new Set();
-    const storedItems = getStoredData("items");
+    const storedItems = getStoredData("Data");
     const sellItemIds = storedItems
       .filter((item) => item.type === "sell")
       .map((item) => item.id);
     const purchaseIds = storedItems
       .filter((item) => item.type === "purchase")
       .map((item) => item.id);
-    const existingItems = storedItems.map((item) => item.id);
+    const existingItems = storedItems.map((item) => (item.id));
+    console.log(existingItems);
     data.forEach((row, index) => {
+      const errors=[]
       const { item_id, component_id, quantity } = row;
 
       // Validate that the component is not a 'sell' item
-      if (sellItemIds.includes(component_id)) {
+      if (sellItemIds.includes(Number(component_id))) {
         errors.push(
           `Row ${
             index + 1
@@ -79,7 +98,7 @@ const UploadBOMPage = ({ setBOMs, BOMs }) => {
       }
 
       // Validate that the item_id is not a 'purchase' item
-      if (purchaseIds.includes(item_id)) {
+      if (purchaseIds.includes(Number(item_id))) {
         errors.push(
           `Row ${
             index + 1
@@ -108,24 +127,69 @@ const UploadBOMPage = ({ setBOMs, BOMs }) => {
       }
 
       // Validate that the item_id exists in the stored items
-      if (!existingItems.includes(item_id)) {
+      if (!existingItems.includes(Number(item_id))) {
         errors.push(
           `Row ${
             index + 1
           }: BOM cannot be created for item_id (${item_id}) not created yet.`
         );
       }
-    });
 
-    return errors;
+      if (errors.length > 0) {
+        errorData.push({ ...row, errors: errors.join(", ") });
+      }
+    });
+    return errorData;
   };
+
+  const generateCSV = (errorData) => {
+    
+    const header = ["id","item_id","component_id","quantity","created_by","last_updated_by","createdAt","updatedAt","errors"];  // CSV header
+    const rows = errorData.map(item => {
+      return [
+        item.id,
+        item.item_id,
+        item.component_id,
+        item.quantity,
+        item.created_by,  
+        item.last_updated_by,
+        item.createdAt,
+        item.updatedAt,
+        item.errors
+      ];
+    });
+    
+    console.log(rows);
+    // Convert the header and rows into a CSV string
+    const csvContent = [
+      header.join(","),  // Convert the header to a string
+      ...rows.map(row => row.join(",")),  // Convert each row to a string
+    ].join("\n");
+  
+    return csvContent;
+  };
+
+  const errorData = validateData(csvErrors); 
+  const csvContent = generateCSV(errorData); 
+
+  const downloadCSV = (csvContent, fileName = "error_report.csv") => {
+    
+
+    alert("There were errors in your CSV file. Please download the error report.");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    link.click();
+  };
+  
 
   const handleSingleEntryChange = (e) => {
     const { name, value } = e.target;
     setSingleEntry((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSingleEntrySubmit = () => {
+  const handleSingleEntrySubmit = async () => {
     const newId = lastId + 1;
     const errors = validateData([singleEntry]);
     if (errors.length === 0) {
@@ -133,10 +197,42 @@ const UploadBOMPage = ({ setBOMs, BOMs }) => {
         ...singleEntry,
         id: newId, // Assign new ID
       };
-      setBOMs((prev) => [...prev, entryWithId]);
-      alert("BOM added successfully!");
+  
+
+        const response = await fetch("https://api-assignment.inveesync.in/bom", {
+          method: "POST", // HTTP method
+          headers: {
+            "Content-Type": "application/json", // Sending data in JSON format
+          },
+          body: JSON.stringify(entryWithId), // Send the entry data as a JSON string
+        });
+  
+        if (response.ok) {
+          // If the request is successful, update the BOMs state
+          setSingleEntryUpdate((prevstate)=>prevstate+1)
+          alert("BOM added successfully!");
+          
+          // Reset the singleEntry state after successful submission
+          setSingleEntry({
+            id: newId + 1,
+            item_id: "",
+            component_id: "",
+            quantity: "",
+            created_by: "system_user",
+            last_updated_by: "system_user",
+            createdAt: "",
+            updatedAt: "",
+          });
+        } else {
+          const errorData = await response.json(); // Get the error message from the API response
+          alert(`Failed to add BOM: ${errorData.message || response.statusText}`);
+          
+        }
+    
+    } else {
+      alert(`Please fix the errors:\n${errors.join("\n")}`)
       setSingleEntry({
-        id: newId + 1,
+        id: newId ,
         item_id: "",
         component_id: "",
         quantity: "",
@@ -144,25 +240,53 @@ const UploadBOMPage = ({ setBOMs, BOMs }) => {
         last_updated_by: "system_user",
         createdAt: "",
         updatedAt: "",
-      });
-    } else {
-      alert(`Please fix the errors:\n${errors.join("\n")}`);
+      });;
     }
   };
+  
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (csvData.length > 0) {
       console.log("Submitting bulk data:", csvData);
-      const maxIdInBulk = csvData.reduce(
-        (maxId, item) => Math.max(maxId, parseInt(item.id || 0)),
-        lastId
-      );
-      setBOMs((prev) => [...prev, ...csvData]);
-      alert("BOMs uploaded successfully!");
+  
+      let currentId = lastId; // Start with the lastId
+  
+      
+        for (const item of csvData) {
+          currentId += 1; // Increment the ID for each item
+  
+          // Add the updated ID to the current item
+          const itemWithId = { ...item, id: currentId.toString() };
+  
+          // Make POST request for each item
+          const response = await fetch("https://api-assignment.inveesync.in/bom", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(itemWithId),
+          });
+  
+          if (!response.ok) {
+            const error = await response.text();
+            console.error(`Failed to upload item ID ${currentId}:`, error);
+            alert(`Failed to upload item ID ${currentId}: ${error}`);
+            continue; // Skip to the next item on failure
+          }
+  
+          const result = await response.json();
+          console.log(`Successfully uploaded item ID ${currentId}:`, result);
+  
+          setCsvEntryUpdate((prevstate)=>prevstate+1)
+
+        }
+  
+        alert("BOMs uploaded successfully!");
     } else {
       alert("No valid data to submit. Please fix the errors.");
     }
   };
+  
 
   const downloadBOMTemplate = () => {
     // Define the BOM template headers
@@ -302,14 +426,19 @@ const UploadBOMPage = ({ setBOMs, BOMs }) => {
           <button onClick={handleSubmit}>Submit Bulk Data</button>
           <button onClick={downloadBOMTemplate}>Download BOM Template</button>
           {csvErrors.length > 0 && (
-            <div className="errors" style={{ color: "red" }}>
-              <h3>CSV Errors</h3>
-              <ul>
-                {csvErrors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            </div>
+             <div style={{ color: "red" }}>
+             <button onClick={()=>downloadCSV(csvContent)}>DownLoad Error File</button>
+           <h3>CSV Errors</h3>
+           <ul>
+             {csvErrors.map((item, index) => (
+               <li key={index}>
+                 {item.errors && item.errors.split(',').map((error, errorIndex) => (
+                   <div key={errorIndex}>{error}</div>
+                 ))}
+               </li>
+             ))}
+           </ul>
+         </div>
           )}
         </div>
       )}

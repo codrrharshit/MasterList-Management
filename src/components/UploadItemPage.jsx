@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from "react";
 import Papa from "papaparse";
-// import ItemTable from "./ItemTable"; // Import your table component
 import "./UploadItemPage.css";
 import { Link } from "react-router-dom";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 
-const UploadItemPage = ({ setItems, items }) => {
+const UploadItemPage = ({ setItems, items , Edit,Delete }) => {
+  const [SingleEntryUpdate,setSingleEntryUpdate]=useState(0)
+  const [CsvEntryUpdate,setCsvEntryUpdate]=useState(0)
   const [csvData, setCsvData] = useState([]);
   const [csvErrors, setCsvErrors] = useState([]);
   const [singleEntry, setSingleEntry] = useState({
     internal_item_name: "",
     tenant_id: "",
+    item_description: "Sample Item",
     type: "",
     uom: "",
     additional_attributes__scrap_type: "",
@@ -20,9 +23,28 @@ const UploadItemPage = ({ setItems, items }) => {
     updatedAt: "",
     created_by: "system_user",
     last_updated_by: "system_user",
+    customer_item_name: "Customer ABC",
+    is_deleted: false,
+  
   });
   const [activeMode, setActiveMode] = useState("single");
   const [lastId, setLastId] = useState(0);
+  const [Data,setData]=useLocalStorage('Data',[])
+
+  useEffect(() => {
+    fetch("https://api-assignment.inveesync.in/items")
+      .then((response) => response.json())
+      .then((data) => {
+        console.log( data);
+        setItems(data); 
+        const maxId = data.reduce(
+          (maxId, item) => Math.max(maxId, parseInt(item.id || 0)),
+          0
+        );
+        setLastId(maxId);
+      })
+      .catch((error) => console.error("Error fetching data:", error));
+  }, [SingleEntryUpdate,CsvEntryUpdate,Edit,Delete]);
 
   // Handle CSV file upload
   
@@ -62,10 +84,13 @@ const UploadItemPage = ({ setItems, items }) => {
   };
   // new Validation Logic
   const validateData = (data) => {
-    const errors = [];
+    const errorData = []; // Array to collect rows with errors
+    
     const seenItems = new Set(); // Track unique internal_item_name + tenant combinations
-
+  
     data.forEach((item, index) => {
+      const errors = []; // Array to collect errors for this row
+      
       const {
         internal_item_name,
         tenant_id,
@@ -78,31 +103,29 @@ const UploadItemPage = ({ setItems, items }) => {
         createdAt,
         updatedAt,
       } = item;
-
+  
       // 1. Duplicate internal_item_name + tenant combination
       const itemKey = `${internal_item_name}-${tenant_id}`;
       if (seenItems.has(itemKey)) {
         errors.push(
-          `Row ${
-            index + 1
-          }: Duplicate 'internal_item_name' and 'tenant' combination.`
+          `Row ${index + 1}: Duplicate 'internal_item_name' and 'tenant' combination.`
         );
       } else {
         seenItems.add(itemKey);
       }
-
+  
       // 2. Missing 'tenant_id'
       if (!tenant_id || tenant_id === "NaN") {
         errors.push(`Row ${index + 1}: 'tenant_id' is mandatory.`);
       }
-
+  
       // 3. Invalid UoM value (not 'kgs' or 'nos')
       if (uom && !["kgs", "nos"].includes(uom.toLowerCase())) {
         errors.push(
           `Row ${index + 1}: Invalid UoM value. Must be 'kgs' or 'nos'.`
         );
       }
-
+  
       // 4. min_buffer is required for 'purchase' or 'sell' types
       if (
         (type === "sell" || type === "purchase") &&
@@ -112,42 +135,37 @@ const UploadItemPage = ({ setItems, items }) => {
           `Row ${index + 1}: 'min_buffer' is required and must be numeric.`
         );
       }
-
+  
       // 5. avg_weight_needed must be a boolean (true/false)
-      const avgWeight = String(
-        additional_attributes__avg_weight_needed
-      ).toLowerCase();
+      const avgWeight = String(additional_attributes__avg_weight_needed).toLowerCase();
       if (avgWeight !== "true" && avgWeight !== "false") {
         errors.push(
           `Row ${index + 1}: 'avg_weight_needed' must be 'true' or 'false'.`
         );
       }
-
+  
       // 6. scrap_type is required for 'sell' items
       if (
         type === "sell" &&
-        (!additional_attributes__scrap_type ||
-          additional_attributes__scrap_type === "")
+        (!additional_attributes__scrap_type || additional_attributes__scrap_type === "")
       ) {
         errors.push(
           `Row ${index + 1}: 'scrap_type' is required for sell items.`
         );
       }
-
+  
       // 7. Check if internal_item_name is missing
       if (!internal_item_name || internal_item_name === "") {
         errors.push(`Row ${index + 1}: 'internal_item_name' is mandatory.`);
       }
-
+  
       // 8. Validate type value
       if (type && !["sell", "purchase", "component"].includes(type)) {
         errors.push(
-          `Row ${
-            index + 1
-          }: 'type' must be one of 'sell', 'purchase', or 'component'.`
+          `Row ${index + 1}: 'type' must be one of 'sell', 'purchase', or 'component'.`
         );
       }
-
+  
       // 9. Buffer validation: must be numeric and positive
       if (min_buffer && parseFloat(min_buffer) < 0) {
         errors.push(`Row ${index + 1}: 'min_buffer' cannot be negative.`);
@@ -155,51 +173,95 @@ const UploadItemPage = ({ setItems, items }) => {
       if (max_buffer && parseFloat(max_buffer) < 0) {
         errors.push(`Row ${index + 1}: 'max_buffer' cannot be negative.`);
       }
-
+  
       if (
         max_buffer &&
         min_buffer &&
         parseFloat(max_buffer) < parseFloat(min_buffer)
       ) {
         errors.push(
-          `Row ${
-            index + 1
-          }: 'max_buffer' must be greater than or equal to 'min_buffer'.`
+          `Row ${index + 1}: 'max_buffer' must be greater than or equal to 'min_buffer'.`
         );
       }
-
+  
       // 10. Date validation for 'createdAt' and 'updatedAt'
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/; // Strict YYYY-MM-DD format
       const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/; // ISO 8601 format
-
+  
       if (
         createdAt &&
         !createdAt.match(dateRegex) &&
         !createdAt.match(isoDateRegex)
       ) {
         errors.push(
-          `Row ${
-            index + 1
-          }: Invalid 'createdAt' format. Expected 'YYYY-MM-DD' or ISO 8601.`
+          `Row ${index + 1}: Invalid 'createdAt' format. Expected 'YYYY-MM-DD' or ISO 8601.`
         );
       }
-
+  
       if (
         updatedAt &&
         !updatedAt.match(dateRegex) &&
         !updatedAt.match(isoDateRegex)
       ) {
         errors.push(
-          `Row ${
-            index + 1
-          }: Invalid 'updatedAt' format. Expected 'YYYY-MM-DD' or ISO 8601.`
+          `Row ${index + 1}: Invalid 'updatedAt' format. Expected 'YYYY-MM-DD' or ISO 8601.`
         );
       }
+  
+      // If there are any errors, add them to the errorData array along with the row data
+      if (errors.length > 0) {
+        errorData.push({ ...item, errors: errors.join(", ") });
+      }
+    });
+    console.log(errorData);
+  
+    return errorData;
+  };
+  
+  const generateCSV = (errorData) => {
+    
+    const header = ["id","internal_item_name","tenant_id","type","uom","max_buffer","created_by","last_updated_by","createdAt","updatedAt","additional_attributes__avg_weight_needed","additional_attributes__scrap_type","errors"];  // CSV header
+    const rows = errorData.map(item => {
+      return [
+        item.id,
+        item.internal_item_name,
+        item.tenant_id,
+        item.type,
+        item.uom,  
+        item.max_buffer,
+        item.min_buffer,
+        item.created_by,
+        item.last_updated_by,
+        item.createdAt,
+        item.updatedAt,
+        item.additional_attributes?.avg_weight_needed,
+        item.additional_attributes?.scrap_type,
+        item.errors
+      ];
     });
     
-    return errors;
+    console.log(rows);
+    // Convert the header and rows into a CSV string
+    const csvContent = [
+      header.join(","),  // Convert the header to a string
+      ...rows.map(row => row.join(",")),  // Convert each row to a string
+    ].join("\n");
+  
+    return csvContent;
   };
+ const errorData = validateData(csvErrors); 
+  const csvContent = generateCSV(errorData); 
 
+  const downloadCSV = (csvContent, fileName = "error_report.csv") => {
+    
+
+    alert("There were errors in your CSV file. Please download the error report.");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    link.click();
+  };
   
 
   const handleSingleEntryChange = (e) => {
@@ -207,33 +269,68 @@ const UploadItemPage = ({ setItems, items }) => {
     setSingleEntry((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSingleEntrySubmit = () => {
+  const handleSingleEntrySubmit = async () => {
     const newId = lastId + 1;
     const errors = validateData([singleEntry]);
+  
     if (errors.length === 0) {
       const entryWithId = {
         ...singleEntry,
-        id: newId, // Assign new ID
+        id: newId, 
+        additional_attributes: {
+          avg_weight_needed: singleEntry.additional_attributes__avg_weight_needed,
+          scrap_type:singleEntry.additional_attributes__scrap_type,
+        },
       };
-      setItems((prev) => [...prev, entryWithId]);
-      alert("Item added successfully!");
-      setSingleEntry({
-        id: newId + 1,
-        internal_item_name: "",
-        tenant_id: "",
-        type: "",
-        uom: "",
-        additional_attributes__scrap_type: "",
-        min_buffer: "",
-        max_buffer: "",
-        additional_attributes__avg_weight_needed: "false",
-        createdAt: "",
-        updatedAt: "",
-      });
+      delete entryWithId.additional_attributes__avg_weight_needed;
+      delete entryWithId.additional_attributes__scrap_type;
+     
+      const realData={...entryWithId,lastId:lastId}
+      setData((prevstate)=>[...prevstate,realData])
+
+        const response = await fetch("https://api-assignment.inveesync.in/items", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(entryWithId),
+        });
+  
+        if (response.ok) {
+          const result = await response.json(); // Get response data if needed
+          alert("Item added successfully!");
+          setSingleEntryUpdate((prevstate)=>prevstate+1)
+          
+  
+          // Reset singleEntry with a new ID and empty fields
+          setSingleEntry({
+            id: newId + 1,
+            internal_item_name: "",
+            tenant_id: "",
+            item_description: "Sample Item",
+            type: "",
+            uom: "",
+            additional_attributes__scrap_type: "",
+            min_buffer: "",
+            max_buffer: "",
+            additional_attributes__avg_weight_needed: "false",
+            createdAt: "",
+            updatedAt: "",
+            created_by: "system_user",
+            last_updated_by: "system_user",
+            customer_item_name: "Customer ABC",
+            is_deleted: false,
+          });
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to add item. Server responded with: ${errorData.message || response.statusText}`);
+        }
+      
     } else {
       alert(`Please fix the errors:\n${errors.join("\n")}`);
     }
   };
+  
 
   const downloadCSVTemplate = () => {
     const templateData = [
@@ -276,20 +373,67 @@ const UploadItemPage = ({ setItems, items }) => {
     link.click();
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    
     if (csvData.length > 0) {
       console.log("Submitting bulk data:", csvData);
-      const maxIdInBulk = csvData.reduce(
-        (maxId, item) => Math.max(maxId, parseInt(item.id || 0)),
-        lastId
-      );
-      setItems((prevstate) => [...prevstate, ...csvData]);
-      setLastId(maxIdInBulk);
-      alert("Items uploaded successfully!");
+  
+
+    
+      let currentId = lastId + 1;
+      
+      const transformedData = csvData.map((item) => {
+
+        const transformedItem = {
+          ...item,
+          id: currentId,
+          additional_attributes: {
+            avg_weight_needed: item.additional_attributes__avg_weight_needed,
+            scrap_type: item.additional_attributes__scrap_type,
+          },
+          item_description: "Sample Item",
+          customer_item_name: "Customer ABC",
+          is_deleted: false,
+        };
+        
+        currentId++;
+        delete transformedItem.additional_attributes__avg_weight_needed;
+        delete transformedItem.additional_attributes__scrap_type;
+        const realData={...transformedItem,lastId:lastId}
+        setData((prevstate)=>[...prevstate,realData])
+        return transformedItem;
+      });
+  
+      // Post each item individually
+      
+        for (const item of transformedData) {
+          const response = await fetch("https://api-assignment.inveesync.in/items", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(item),
+          });
+  
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error(`Failed to upload item ID ${item.id}:`, errorData.message || response.statusText);
+            alert(`Failed to upload item ID ${item.id}: ${errorData.message || response.statusText}`);
+            return;
+          }
+        }
+  
+        // If all items succeed
+       setCsvEntryUpdate((prevstate)=>prevstate+1)
+        setLastId(currentId - 1);
+        alert("Items uploaded successfully!");
+      
     } else {
       alert("No valid data to submit. Please fix the errors in your CSV.");
     }
   };
+  
+  
 
  
   
@@ -453,14 +597,21 @@ const UploadItemPage = ({ setItems, items }) => {
           <button onClick={handleSubmit}>Submit Bulk Data</button>
           <button onClick={downloadCSVTemplate}>Download CSV Template</button>
           {csvErrors.length > 0 && (
+            
             <div style={{ color: "red" }}>
-              <h3>CSV Errors</h3>
-              <ul>
-                {csvErrors.map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-              </ul>
-            </div>
+              <button onClick={()=>downloadCSV(csvContent)}>DownLoad Error File</button>
+            <h3>CSV Errors</h3>
+            <ul>
+              {csvErrors.map((item, index) => (
+                <li key={index}>
+                  {item.errors && item.errors.split(',').map((error, errorIndex) => (
+                    <div key={errorIndex}>{error}</div>
+                  ))}
+                </li>
+              ))}
+            </ul>
+          </div>
+          
           )}
         </div>
       )}
