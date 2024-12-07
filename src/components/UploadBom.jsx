@@ -76,6 +76,7 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
     const errorData = [];
     const itemComponentPairs = new Set();
     const storedItems = getStoredData("Data");
+    console.log(data);
     const sellItemIds = storedItems
       .filter((item) => item.type === "sell")
       .map((item) => item.id);
@@ -135,19 +136,19 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
         );
       }
 
-      if (!item_id && sellItemIds.length > 0) {
-        errors.push(
-          `Row ${index + 1}: Sell item must have at least 1 valid item_id.`
-        );
-        setPendinJobs((prevstate)=>prevstate+1)
-      }
+      // if (!item_id && sellItemIds.length > 0) {
+      //   errors.push(
+      //     `Row ${index + 1}: Sell item must have at least 1 valid item_id.`
+      //   );
+      //   setPendinJobs((prevstate)=>prevstate+1)
+      // }
 
-      if (!component_id && purchaseIds.length > 0) {
-        errors.push(
-          `Row ${index + 1}: Purchase item must have at least 1 valid component_id.`
-        );
-        setPendinJobs((prevstate)=>prevstate+1)
-      }
+      // if (!component_id && purchaseIds.length > 0) {
+      //   errors.push(
+      //     `Row ${index + 1}: Purchase item must have at least 1 valid component_id.`
+      //   );
+      //   setPendinJobs((prevstate)=>prevstate+1)
+      // }
 
       if (errors.length > 0) {
         errorData.push({ ...row, errors: errors.join(", "),pendingJobs:pendingJobs});
@@ -174,7 +175,6 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
       ];
     });
     
-    console.log(rows);
     // Convert the header and rows into a CSV string
     const csvContent = [
       header.join(","),  // Convert the header to a string
