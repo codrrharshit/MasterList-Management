@@ -4,7 +4,7 @@ import ShowUpdateItemList from './ShowUpdateItemList'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
 export default function ItemMaster() {
-    const [items,setItems]=useState([])
+    const [items,setItems]=useLocalStorage("items",[])
     const [Edit,setEdit]=useState(0)
     const [Delete,setDelete]=useState(0)
   return (
