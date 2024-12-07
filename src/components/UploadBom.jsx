@@ -135,14 +135,14 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
         );
       }
 
-      if (!Number(item_id) && sellItemIds.length > 0) {
+      if (!item_id && sellItemIds.length > 0) {
         errors.push(
           `Row ${index + 1}: Sell item must have at least 1 valid item_id.`
         );
         setPendinJobs((prevstate)=>prevstate+1)
       }
 
-      if (!Number(component_id) && purchaseIds.length > 0) {
+      if (!component_id && purchaseIds.length > 0) {
         errors.push(
           `Row ${index + 1}: Purchase item must have at least 1 valid component_id.`
         );
