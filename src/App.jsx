@@ -7,6 +7,7 @@ import BomMaster from "./components/BomMaster";
 import HomePage from "./components/HomePage";
 
 function App() {
+  
   return (
     <Router>
       <Routes>

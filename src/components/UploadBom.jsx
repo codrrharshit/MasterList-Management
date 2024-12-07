@@ -24,7 +24,7 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
     fetch("https://api-assignment.inveesync.in/bom")
       .then((response) => response.json())
       .then((data) => {
-        console.log( data);
+  
         setBOMs(data); 
         const maxId = data.reduce(
           (maxId, item) => Math.max(maxId, parseInt(item.id || 0)),
@@ -54,7 +54,7 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
         const parsedData = result.data.filter((row) =>
           Object.values(row).some((value) => value !== "")
         );
-        console.log(data);
+
         const errors = validateData(parsedData);
         if (errors.length === 0) {
           setCsvData(parsedData);
@@ -76,7 +76,7 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
     const errorData = [];
     const itemComponentPairs = new Set();
     const storedItems = getStoredData("items");
-    console.log(data);
+
     const sellItemIds = storedItems
       .filter((item) => item.type === "sell")
       .map((item) => item.id);
@@ -84,11 +84,15 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
       .filter((item) => item.type === "purchase")
       .map((item) => item.id);
     const existingItems = storedItems.map((item) => (item.id));
-    console.log(existingItems);
+
     data.forEach((row, index) => {
       const errors=[]
       const { item_id, component_id, quantity } = row;
 
+      if(!item_id || !component_id){
+        errors.push("atleast One item_id and component_id is needed");
+      }
+      else{
       // Validate that the component is not a 'sell' item
       if (sellItemIds.includes(Number(component_id))) {
         errors.push(
@@ -149,6 +153,7 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
         );
         setPendinJobs((prevstate)=>prevstate+1)
       }
+    }
 
       if (errors.length > 0) {
         errorData.push({ ...row, errors: errors.join(", "),pendingJobs:pendingJobs});
@@ -245,7 +250,7 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
         }
     
     } else {
-      alert(`Please fix the errors:\n${errors.join("\n")}`)
+      alert(`Please fix the errors:\n${errors[0].errors}`)
       setSingleEntry({
         id: newId ,
         item_id: "",
@@ -262,7 +267,7 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
 
   const handleSubmit = async () => {
     if (csvData.length > 0) {
-      console.log("Submitting bulk data:", csvData);
+
   
       let currentId = lastId; // Start with the lastId
   
@@ -398,6 +403,7 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
             value={singleEntry.item_id}
             onChange={handleSingleEntryChange}
             placeholder="Enter Item ID"
+            required
           />
           <label>Component ID</label>
           <input
@@ -406,6 +412,7 @@ const UploadBOMPage = ({ setBOMs, BOMs,Edit,Delete }) => {
             value={singleEntry.component_id}
             onChange={handleSingleEntryChange}
             placeholder="Enter Component ID"
+            required
           />
 
           <label>Quantity</label>
