@@ -97,17 +97,17 @@
   /* Responsive Modal Styles */
   @media (max-width: 768px) {
     .modal-content {
-      width: 80%; /* Adjust width for tablets */
-      padding: 20px; /* Reduce padding */
+      width: 80%; 
+      padding: 20px; 
     }
 
     .modal-content h2 {
-      font-size: 20px; /* Adjust font size for smaller screens */
+      font-size: 20px; 
     }
 
     .modal-actions button {
-      padding: 8px 15px; /* Adjust button padding */
-      font-size: 14px; /* Adjust button font size */
+      padding: 8px 15px;
+      font-size: 14px; 
     }
   }
   
@@ -118,19 +118,19 @@
     }
 
     .modal-content h2 {
-      font-size: 18px; /* Further adjust font size for mobile */
+      font-size: 18px; 
     }
 
     .modal-actions {
-      flex-direction: column; /* Stack buttons vertically on mobile */
+      flex-direction: column; 
     }
 
     .modal-actions button {
-      width: 100%; /* Make buttons full-width */
-      margin-bottom: 10px; /* Add margin between stacked buttons */
+      width: 100%; 
+      margin-bottom: 10px; 
     }
     
     .modal-actions button:last-child {
-      margin-bottom: 0; /* Remove margin from the last button */
+      margin-bottom: 0; 
     }
   }

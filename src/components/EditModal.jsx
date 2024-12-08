@@ -117,11 +117,11 @@ const EditModal = ({ rowData, onClose, onSave }) => {
     } else {
       setErrors([]);
 
-      // Construct the updated data object (you can modify it as needed for your API)
+     
       const updatedData = {
-        ...formData, // assuming formData is the object you're submitting
+        ...formData, 
         additional_attributes: {
-          avg_weight_needed: formData.avg_weight_needed, // example field
+          avg_weight_needed: formData.avg_weight_needed, 
           scrap_type: formData.scrap_type,
         },
       };
@@ -134,11 +134,11 @@ const EditModal = ({ rowData, onClose, onSave }) => {
       const response = await fetch(
         `https://api-assignment.inveesync.in/items/${formData.id}`,
         {
-          method: "PUT", // Use 'PATCH' if updating only specific fields
+          method: "PUT", 
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(updatedData), // Send the updated data
+          body: JSON.stringify(updatedData), 
         }
       );
 
@@ -147,9 +147,8 @@ const EditModal = ({ rowData, onClose, onSave }) => {
         console.log("Item updated successfully:", result);
         alert("Item updated successfully!");
 
-        // Save the updated data locally or update the state
-        onSave(); // Call onSave to handle the updated data (e.g., updating the state)
-
+       
+        onSave();
         onClose(); // Close the modal
       } else {
         const errorData = await response.json();

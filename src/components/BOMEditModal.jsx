@@ -116,7 +116,7 @@ const BOMEditModal = ({ rowData, onClose, onSave }) => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(formData), // Send the form data as JSON
+          body: JSON.stringify(formData),
         });
   
         if (!response.ok) {
